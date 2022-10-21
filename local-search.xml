@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>Hexo 博客站点的备份与恢复</title>
+    <link href="/2022/10/21/Hexo-%E5%8D%9A%E5%AE%A2%E7%AB%99%E7%82%B9%E7%9A%84%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D/"/>
+    <url>/2022/10/21/Hexo-%E5%8D%9A%E5%AE%A2%E7%AB%99%E7%82%B9%E7%9A%84%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D/</url>
+    
+    <content type="html"><![CDATA[<p>费劲建好的博客站点肯定是不希望因为一些奇怪的原因导致站点崩溃，导致最后丢失数据。</p><h2 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h2><p>对于我来说备份的选择就是直接使用 Git 进行备份，就很方便。只需要排除一些文件就好了。</p><h3 id="需要保留的文件"><a href="#需要保留的文件" class="headerlink" title="需要保留的文件"></a>需要保留的文件</h3><p>先来看一下正常情况下一个 Hexo 博客站点包含以下文件目录。</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs bash">.<br>├── _config.fluid.yml   <span class="hljs-comment"># 主题配置文件</span><br>├── _config.yml         <span class="hljs-comment"># Hexo 配置文件</span><br>├── db.json             <span class="hljs-comment"># 不明，但是不重要，是自动生成的</span><br>├── .deploy_git         <span class="hljs-comment"># 最终由插件 hexo-deploy-git 上传的文件</span><br>├── .gitignore          <span class="hljs-comment"># git 排除文件</span><br>├── node_modules        <span class="hljs-comment"># npm 包文件</span><br>├── package.json        <span class="hljs-comment"># 包配置文件</span><br>├── package-lock.json   <span class="hljs-comment"># 包锁定文件</span><br>├── public              <span class="hljs-comment"># Hexo 生成的静态网页</span><br>├── scaffolds           <span class="hljs-comment"># 模板文件</span><br>├── <span class="hljs-built_in">source</span>              <span class="hljs-comment"># 原始文章目录</span><br>├── themes              <span class="hljs-comment"># 主题目录</span><br>└── yarn.lock           <span class="hljs-comment"># yarn 锁定文件</span><br></code></pre></td></tr></table></figure><p>其中 <code>public</code> 是执行 <code>hexo g</code> 静态生成的，所以可以直接无视，不用备份。<code>source</code> 是存放文章原始记录的位置，需要备份。</p><p><code>themes</code> 是存放主题文件的位置，如果你使用 <code>git</code> 来下载的主题文件，这里建议不用备份这个目录，在需要恢复的时候直接使用 git 来重新下载就好。</p><p>其中 <code>scaffolds</code> 目录是存放模板文件的位置。如果有大量模板建议 git 上传。</p><h4 id="正式备份的文件"><a href="#正式备份的文件" class="headerlink" title="正式备份的文件"></a>正式备份的文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs bash">├── _config.fluid.yml   <span class="hljs-comment"># 主题配置文件</span><br>├── _config.yml         <span class="hljs-comment"># Hexo 配置文件</span><br>├── package.json        <span class="hljs-comment"># 包配置文件</span><br>├── scaffolds           <span class="hljs-comment"># 模板文件</span><br>├── <span class="hljs-built_in">source</span>              <span class="hljs-comment"># 原始文章目录</span><br>├── .gitignore          <span class="hljs-comment"># git 排除文件</span><br>└── themes              <span class="hljs-comment"># 主题目录</span><br></code></pre></td></tr></table></figure><p>我们直接在 GitHub 上开一个仓库，然后将这写文件上传上去就好了。下面附上一个 <code>.gitigonre</code> 文件的内容。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs .gitigonre">.DS_Store<br>Thumbs.db<br>db.json<br>*.log<br>node_modules/<br>public/<br>.deploy*/<br>_multiconfig.yml<br>package-lock.json<br>yarn.lock<br>.github<br></code></pre></td></tr></table></figure><h2 id="恢复"><a href="#恢复" class="headerlink" title="恢复"></a>恢复</h2><p>假设你的 Hexo 出现了问题，需要你恢复备份。</p><h3 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h3><p>首先需要将你的 Hexo 备份从存储库中拉下来，之后进入 Hexo 目录执行 <code>npm install</code> 就可以自动处理依赖。</p><p>如果你没有安装 Hexo-cli 需要安装以下，并设置好的主题目录，之后就可以正常执行了。</p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>SpEL类型转换错误探究</title>
     <link href="/2022/10/20/SpEL%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E9%94%99%E8%AF%AF%E6%8E%A2%E7%A9%B6/"/>
     <url>/2022/10/20/SpEL%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E9%94%99%E8%AF%AF%E6%8E%A2%E7%A9%B6/</url>
@@ -38,19 +51,6 @@
       <tag>杂谈</tag>
       
     </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Hello World</title>
-    <link href="/2022/10/20/hello-world/"/>
-    <url>/2022/10/20/hello-world/</url>
-    
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo new <span class="hljs-string">&quot;My New Post&quot;</span><br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo server<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo generate<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo deploy<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
-    
-    
     
   </entry>
   
